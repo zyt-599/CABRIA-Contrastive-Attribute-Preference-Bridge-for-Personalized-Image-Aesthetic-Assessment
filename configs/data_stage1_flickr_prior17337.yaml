@@ -1,0 +1,62 @@
+﻿paths:
+  datasets_root: /path/to/datasets
+  outputs_root: /path/to/outputs
+
+general_dataset:
+  name: flickr_aes
+  root: /path/to/datasets/FLICKR-AES-001
+  split_file: /path/to/outputs/splits/flickr_aes_prior_173_37_seed42.json
+  # GIAA is image-level; keep it independent from PIAA user-disjoint splits.
+  split_strategy: image_random
+  split_seed: 42
+  val_ratio: 0.2
+  train_split: train
+  val_split: val
+  test_split: test
+  train_target_mode: image_mean
+  val_target_mode: image_mean
+  aux_val_target_mode: rating_rows
+
+general_datasets:
+  - name: flickr_aes
+    root: /path/to/datasets/FLICKR-AES-001
+    split_file: /path/to/outputs/splits/flickr_aes_prior_173_37_seed42.json
+    split_strategy: image_random
+    split_seed: 42
+    val_ratio: 0.2
+    train_split: train
+    val_split: val
+    train_target_mode: image_mean
+    val_target_mode: image_mean
+  - name: para
+    root: /path/to/datasets/PARA
+    train_split: train
+    val_split: val
+    train_target_mode: image_mean
+    val_target_mode: image_mean
+  - name: lapis
+    root: /path/to/datasets/LAPIS
+    train_split: train
+    val_split: val
+    train_target_mode: image_mean
+    val_target_mode: image_mean
+
+personalized_dataset:
+  name: flickr_aes
+  root: /path/to/datasets/FLICKR-AES-001
+
+support_sizes:
+  - 10
+  - 100
+
+user_split:
+  protocol: flickr_aes_prior_173_37
+  seed: 42
+  train_user_count: 173
+  val_user_count: 37
+  test_user_count: 37
+  val_from_train_users: true
+  train_episodes_per_user: 5
+  val_episodes_per_user: 1
+  test_episodes_per_user: 1
+  split_file: /path/to/outputs/splits/flickr_aes_prior_173_37_seed42.json

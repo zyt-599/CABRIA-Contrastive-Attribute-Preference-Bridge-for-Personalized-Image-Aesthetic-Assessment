@@ -1,0 +1,24 @@
+﻿# REAL-CUR user-heldout 10/2/2 split used by the dataset-internal pipeline.
+paths:
+  datasets_root: /path/to/datasets
+  outputs_root: /path/to/outputs
+
+personalized_dataset:
+  name: flickr_aes
+  root: /path/to/datasets/FLICKR-AES-001
+
+support_sizes:
+  - 10
+  - 100
+
+user_split:
+  protocol: user_heldout
+  seed: 42
+  train_user_count: 10
+  val_user_count: 2
+  test_user_count: 2
+  val_from_train_users: false
+  train_episodes_per_user: 4
+  val_episodes_per_user: 1
+  test_episodes_per_user: 1
+  split_file: /path/to/outputs/splits/realcur_userheldout_10_2_2_seed42.json

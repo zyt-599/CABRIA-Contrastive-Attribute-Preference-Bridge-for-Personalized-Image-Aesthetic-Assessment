@@ -1,0 +1,116 @@
+﻿experiment:
+  name: contrast_para
+  seed: 42
+  output_dir: /path/to/outputs/contrast_para
+  giaa_checkpoint: /path/to/checkpoints/best_stage1.pt
+distributed:
+  find_unused_parameters: true
+backbone:
+  model_name: resnet101
+  model_dir: /path/to/backbone/torchvision
+  pretrained: false
+  show_download_progress: true
+  use_naflex: false
+  preferred_long_side: null
+  max_num_patches: null
+  image_size: 224
+  embed_dim: 2048
+  patch_size: 32
+  adapter_dim: 512
+  adapter_dropout: 0.1
+  mean:
+  - 0.485
+  - 0.456
+  - 0.406
+  std:
+  - 0.229
+  - 0.224
+  - 0.225
+model:
+  num_attribute_tokens: 8
+  num_preference_tokens: 4
+  num_heads: 8
+  projection_dim: 256
+  dropout: 0.1
+data:
+  train_split: train_fit
+  val_split: val
+  users_per_batch: 16
+  steps_per_epoch: 100
+  num_workers: 4
+  prefetch_factor: 1
+  pin_memory: true
+amp:
+  enabled: true
+  dtype: bfloat16
+contrast:
+  objective: user_level_hybrid
+  feature_source: attribute_pooled
+  contrast_bins: 5
+  samples_per_bin: 16
+  eval_samples_per_bin: 16
+  user_level_loss_weight: 0.55
+  direct_user_level_loss_weight: 0.12
+  support_retrieval_loss_weight: 0.55
+  direct_support_retrieval_loss_weight: 2.0
+  support_retrieval_value_weight: 0.5
+  support_retrieval_rank_weight: 1.0
+  support_retrieval_score_value_weight: 0.25
+  support_retrieval_score_rank_weight: 0.55
+  support_retrieval_target_sigma: 0.35
+  support_retrieval_temperature: 0.07
+  support_retrieval_support_size: 100
+  support_retrieval_support_sizes:
+  - 10
+  - 20
+  - 50
+  - 100
+  support_retrieval_query_size: 128
+  residual_contrast_loss_weight: 0.45
+  direct_residual_contrast_loss_weight: 0.22
+  residual_score_loss_weight: 0.22
+  residual_rank_loss_weight: 0.18
+  residual_target_scale: 1.0
+  residual_standardize: true
+  residual_standardize_clamp: 3.0
+  direct_loss_weight: 0.05
+  predictor_loss_weight: 0.1
+  score_loss_weight: 0.1
+  rank_loss_weight: 0.1
+  prototype_loss_weight: 0.2
+  prototype_score_loss_weight: 0.15
+  prototype_rank_loss_weight: 0.1
+  rnc_loss_weight: 0.0
+  direct_rnc_loss_weight: 0.0
+  checkpoint_metric: val_proxy_support_retrieval_direct_srcc
+  score_min: 1.0
+  score_max: 5.0
+  temperature: 0.07
+  prototype_temperature: 0.15
+  rnc_temperature: 0.07
+  ordinal_sigma: 0.45
+  rank_min_delta: 0.05
+  rank_temperature: 0.07
+  predictor_hidden_dim: 256
+  predictor_dim: 256
+  predictor_dropout: 0.0
+  score_head_hidden_dim: 256
+  score_head_dropout: 0.0
+  residual_head_hidden_dim: 256
+  residual_head_dropout: 0.0
+  proxy_steps: 50
+contrast_freeze:
+  train_backbone: false
+  train_adapter: true
+  train_attribute_extractor: true
+  train_attribute_head: true
+  train_projection_head: true
+optimization:
+  epochs: 80
+  lr: 2.0e-05
+  weight_decay: 0.01
+  scheduler:
+    name: cosine
+    total_epochs: 120
+    warmup_epochs: 3
+    min_lr_ratio: 0.1

@@ -1,0 +1,27 @@
+﻿paths:
+  datasets_root: /path/to/datasets
+  outputs_root: /path/to/outputs
+
+personalized_dataset:
+  name: para
+  root: /path/to/datasets/PARA
+
+support_sizes:
+  - 10
+  - 20
+  - 50
+  - 100
+
+user_split:
+  protocol: para_user_heldout_401_37
+  seed: 42
+  train_user_count: 401
+  val_user_count: 37
+  test_user_count: 37
+  val_from_train_users: true
+  min_val_user_rows: 101
+  min_test_user_rows: 101
+  train_episodes_per_user: 8
+  val_episodes_per_user: 1
+  test_episodes_per_user: 1
+  split_file: /path/to/outputs/splits/para_user_heldout_401_37_seed42.json

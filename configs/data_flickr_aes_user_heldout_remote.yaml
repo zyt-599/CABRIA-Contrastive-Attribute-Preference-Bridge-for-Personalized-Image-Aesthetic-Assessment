@@ -1,0 +1,23 @@
+﻿paths:
+  datasets_root: /path/to/datasets
+  outputs_root: /path/to/outputs
+
+personalized_dataset:
+  name: flickr_aes
+  root: /path/to/datasets/FLICKR-AES-001
+
+support_sizes:
+  - 10
+  - 100
+
+user_split:
+  protocol: flickr_aes_user_heldout_173_37
+  seed: 42
+  train_user_count: 173
+  val_user_count: 37
+  test_user_count: 37
+  val_from_train_users: true
+  train_episodes_per_user: 8
+  val_episodes_per_user: 1
+  test_episodes_per_user: 1
+  split_file: /path/to/outputs/splits/flickr_aes_user_test_heldout_173_37_seed42.json
