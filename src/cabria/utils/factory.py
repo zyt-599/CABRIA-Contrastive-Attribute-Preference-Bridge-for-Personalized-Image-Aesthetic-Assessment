@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from cobra.models.cobra_model import COBRAModelConfig
-from cobra.models.siglip_adapter import BackboneConfig
+from cabria.models.cabria_model import CABRIAModelConfig
+from cabria.models.siglip_adapter import BackboneConfig
 
 
-def build_model_config(config: dict) -> COBRAModelConfig:
+def build_model_config(config: dict) -> CABRIAModelConfig:
     backbone_cfg = config["backbone"]
     model_cfg = config["model"]
     backbone = BackboneConfig(
@@ -21,7 +21,7 @@ def build_model_config(config: dict) -> COBRAModelConfig:
         preferred_long_side=backbone_cfg.get("preferred_long_side"),
         max_num_patches=backbone_cfg.get("max_num_patches"),
     )
-    return COBRAModelConfig(
+    return CABRIAModelConfig(
         backbone=backbone,
         num_attribute_tokens=int(model_cfg["num_attribute_tokens"]),
         num_preference_tokens=int(model_cfg.get("num_preference_tokens", model_cfg["num_attribute_tokens"])),

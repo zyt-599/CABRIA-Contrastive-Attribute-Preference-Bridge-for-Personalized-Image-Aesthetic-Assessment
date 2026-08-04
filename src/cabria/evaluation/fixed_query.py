@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from cobra.data.personalized_dataset import EpisodeSpec
-from cobra.data.user_split import build_fixed_query_episodes, filter_users_by_min_row_count
+from cabria.data.personalized_dataset import EpisodeSpec
+from cabria.data.user_split import build_fixed_query_episodes, filter_users_by_min_row_count
 
 DEFAULT_MIN_QUERY_IMAGES = 256
 DEFAULT_HOLDOUT_SEED = 4242

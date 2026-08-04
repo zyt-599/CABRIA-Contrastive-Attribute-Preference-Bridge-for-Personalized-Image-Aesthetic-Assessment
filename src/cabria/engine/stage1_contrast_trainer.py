@@ -14,14 +14,14 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, IterableDataset, get_worker_info
 from tqdm.auto import tqdm
 
-from cobra.data.image_batch import pad_image_list, prepare_image_tensor
-from cobra.data.personalized_dataset import load_personalized_frame
-from cobra.models.cobra_model import COBRAStage1Model
-from cobra.utils.checkpoint import save_checkpoint
-from cobra.utils.common import ensure_dir, load_json, resolve_path
-from cobra.utils.factory import build_model_config
-from cobra.utils.optimization import EpochLRScheduler
-from cobra.utils.tracking import Tracker
+from cabria.data.image_batch import pad_image_list, prepare_image_tensor
+from cabria.data.personalized_dataset import load_personalized_frame
+from cabria.models.cabria_model import CABRIAStage1Model
+from cabria.utils.checkpoint import save_checkpoint
+from cabria.utils.common import ensure_dir, load_json, resolve_path
+from cabria.utils.factory import build_model_config
+from cabria.utils.optimization import EpochLRScheduler
+from cabria.utils.tracking import Tracker
 
 
 class ContrastPredictor(nn.Module):
@@ -286,7 +286,7 @@ def _concat_image_batches(
 
 
 def _contrast_pair_features(
-    model: COBRAStage1Model,
+    model: CABRIAStage1Model,
     left_batch: dict[str, torch.Tensor],
     right_batch: dict[str, torch.Tensor],
     feature_source: str,
@@ -609,7 +609,7 @@ def _prepare_residual_targets(
 
 @torch.no_grad()
 def _stage1_base_scores(
-    base_model: COBRAStage1Model,
+    base_model: CABRIAStage1Model,
     images: dict[str, torch.Tensor],
 ) -> torch.Tensor:
     base_model.eval()
@@ -783,7 +783,7 @@ def _score_retrieval_metrics(features: torch.Tensor, labels: torch.Tensor) -> di
 
 @torch.no_grad()
 def _evaluate_contrast_proxy(
-    model: COBRAStage1Model,
+    model: CABRIAStage1Model,
     predictor: ContrastPredictor,
     user_pool: dict[str, dict[str, Any]],
     image_cfg: dict[str, Any],
@@ -833,8 +833,8 @@ def _evaluate_contrast_proxy(
 
 @torch.no_grad()
 def _evaluate_score_proxy(
-    model: COBRAStage1Model,
-    base_model: COBRAStage1Model,
+    model: CABRIAStage1Model,
+    base_model: CABRIAStage1Model,
     predictor: ContrastPredictor,
     score_head: ContrastScoreRegressor,
     residual_head: ContrastScoreRegressor,
@@ -955,8 +955,8 @@ def _evaluate_score_proxy(
 
 @torch.no_grad()
 def _evaluate_support_retrieval_proxy(
-    model: COBRAStage1Model,
-    base_model: COBRAStage1Model,
+    model: CABRIAStage1Model,
+    base_model: CABRIAStage1Model,
     predictor: ContrastPredictor,
     user_score_pool: dict[str, list[tuple[Path, float]]],
     image_cfg: dict[str, Any],
@@ -1065,7 +1065,7 @@ def _evaluate_support_retrieval_proxy(
     }
 
 
-def _freeze_for_contrast(model: COBRAStage1Model, config: dict[str, Any]) -> None:
+def _freeze_for_contrast(model: CABRIAStage1Model, config: dict[str, Any]) -> None:
     freeze_cfg = config.get("contrast_freeze", {})
     train_adapter = bool(freeze_cfg.get("train_adapter", True))
     train_attribute_extractor = bool(freeze_cfg.get("train_attribute_extractor", True))
@@ -1091,7 +1091,7 @@ def _freeze_for_contrast(model: COBRAStage1Model, config: dict[str, Any]) -> Non
         parameter.requires_grad = False
 
     print(
-        "[COBRA] Stage1 contrast freeze policy: "
+        "[CABRIA] Stage1 contrast freeze policy: "
         f"train_backbone={train_backbone}, train_adapter={train_adapter}, "
         f"train_attribute_extractor={train_attribute_extractor}, "
         f"train_attribute_head={train_attribute_head}, train_projection_head={train_projection_head}, "
@@ -1100,7 +1100,7 @@ def _freeze_for_contrast(model: COBRAStage1Model, config: dict[str, Any]) -> Non
 
 
 def _contrast_features(
-    model: COBRAStage1Model,
+    model: CABRIAStage1Model,
     images: dict[str, torch.Tensor],
     feature_source: str,
 ) -> torch.Tensor:
@@ -1119,7 +1119,7 @@ def _contrast_features(
 
 def _save_contrast_checkpoint(
     path: Path,
-    model: COBRAStage1Model,
+    model: CABRIAStage1Model,
     optimizer: torch.optim.Optimizer,
     scheduler: EpochLRScheduler,
     epoch: int,
@@ -1164,8 +1164,8 @@ def _save_contrast_checkpoint(
 def train_stage1_contrast(config: dict, data_config: dict, device: torch.device, tracker: Tracker | None = None) -> Path:
     distributed, rank, world_size, local_rank = _distributed_state()
     is_main = rank == 0
-    model_core = COBRAStage1Model(build_model_config(config)).to(device)
-    base_model = COBRAStage1Model(build_model_config(config)).to(device)
+    model_core = CABRIAStage1Model(build_model_config(config)).to(device)
+    base_model = CABRIAStage1Model(build_model_config(config)).to(device)
     giaa_checkpoint = config["experiment"]["giaa_checkpoint"]
     checkpoint = torch.load(resolve_path(giaa_checkpoint), map_location="cpu")
     model_core.load_state_dict(checkpoint["model"], strict=True)
@@ -1174,7 +1174,7 @@ def train_stage1_contrast(config: dict, data_config: dict, device: torch.device,
         parameter.requires_grad_(False)
     base_model.eval()
     if is_main:
-        print(f"[COBRA] Stage1 contrast initialized from GIAA checkpoint: {resolve_path(giaa_checkpoint).as_posix()}")
+        print(f"[CABRIA] Stage1 contrast initialized from GIAA checkpoint: {resolve_path(giaa_checkpoint).as_posix()}")
 
     _freeze_for_contrast(model_core, config)
     contrast_cfg = config.get("contrast", {})
@@ -1263,7 +1263,7 @@ def train_stage1_contrast(config: dict, data_config: dict, device: torch.device,
             broadcast_buffers=False,
         )
         if is_main:
-            print(f"[COBRA] Stage1 contrast DDP enabled: world_size={world_size}")
+            print(f"[CABRIA] Stage1 contrast DDP enabled: world_size={world_size}")
 
     dataset_cfg = data_config["personalized_dataset"]
     split_payload = load_json(data_config["user_split"]["split_file"])
@@ -1377,7 +1377,7 @@ def train_stage1_contrast(config: dict, data_config: dict, device: torch.device,
     amp_dtype_name = str(amp_cfg.get("dtype", "bfloat16"))
     amp_dtype = torch.bfloat16 if amp_dtype_name == "bfloat16" else torch.float16
     print(
-        "[COBRA] Stage1 contrast data: "
+        "[CABRIA] Stage1 contrast data: "
         f"objective={contrast_objective}, train_split={train_split}, train_bins={len(score_pool)}, "
         f"val_split={val_split}, val_bins={len(val_score_pool)}, "
         f"samples_per_bin={samples_per_bin}, steps_per_epoch={steps_per_epoch}, "
@@ -1843,7 +1843,7 @@ def train_stage1_contrast(config: dict, data_config: dict, device: torch.device,
             )
         if is_main:
             tqdm.write(
-                f"[COBRA] Stage1 Contrast Epoch {epoch}: "
+                f"[CABRIA] Stage1 Contrast Epoch {epoch}: "
                 f"loss={epoch_loss:.4f}, val_top1={proxy_metrics['top1']:.4f}, "
                 f"val_loss={proxy_metrics['loss']:.4f}, "
                 f"val_mae={proxy_metrics.get('score_mae', 0.0):.4f}, "

@@ -9,9 +9,9 @@ import torch
 import torch.distributed as dist
 from tqdm.auto import tqdm
 
-from cobra.engine.stage2_tta import adapt_model_parameters_on_support, adapt_user_on_support, tta_enabled
-from cobra.losses.general_regression import GeneralRegressionLoss
-from cobra.utils.metrics import macro_user_correlations, same_image_rank_correlation, threshold_accuracy
+from cabria.engine.stage2_tta import adapt_model_parameters_on_support, adapt_user_on_support, tta_enabled
+from cabria.losses.general_regression import GeneralRegressionLoss
+from cabria.utils.metrics import macro_user_correlations, same_image_rank_correlation, threshold_accuracy
 
 
 _QUERY_OUTPUT_KEYS = {
@@ -324,7 +324,7 @@ def evaluate_stage2_decomposed(
                         f" reserved_gb={torch.cuda.memory_reserved(device) / (1024 ** 3):.3f}"
                     )
                 print(
-                    "[COBRA][PROFILE] Stage2 eval phases: "
+                    "[CABRIA][PROFILE] Stage2 eval phases: "
                     f"user_id={batch['user_id']} "
                     f"user_tta={user_tta_finished - phase_started:.3f}s "
                     f"parameter_tta={parameter_tta_finished - user_tta_finished:.3f}s "

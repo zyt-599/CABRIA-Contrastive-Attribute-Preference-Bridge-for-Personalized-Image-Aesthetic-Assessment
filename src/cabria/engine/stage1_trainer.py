@@ -10,22 +10,22 @@ from torch.utils.data import ConcatDataset, DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 from tqdm.auto import tqdm
 
-from cobra.data.general_flickr_dataset import FlickrGeneralDataset, GeneralAestheticDataset, load_general_aesthetic_frame
-from cobra.data.image_batch import collate_general_samples
-from cobra.engine.evaluator import evaluate_stage1
-from cobra.evaluation.stage1_fixed_query import (
+from cabria.data.general_flickr_dataset import FlickrGeneralDataset, GeneralAestheticDataset, load_general_aesthetic_frame
+from cabria.data.image_batch import collate_general_samples
+from cabria.engine.evaluator import evaluate_stage1
+from cabria.evaluation.stage1_fixed_query import (
     evaluate_stage1_fixed_query_base,
     stage1_checkpoint_selection_score,
 )
-from cobra.losses.general_regression import GeneralRegressionLoss
-from cobra.losses.query_ranking import query_pairwise_ranking_loss
-from cobra.models.attribute_token_extractor import attribute_diversity_loss
-from cobra.models.cobra_model import COBRAStage1Model
-from cobra.utils.checkpoint import save_checkpoint
-from cobra.utils.common import ensure_dir
-from cobra.utils.factory import build_model_config
-from cobra.utils.optimization import EarlyStopping, EpochLRScheduler
-from cobra.utils.tracking import Tracker
+from cabria.losses.general_regression import GeneralRegressionLoss
+from cabria.losses.query_ranking import query_pairwise_ranking_loss
+from cabria.models.attribute_token_extractor import attribute_diversity_loss
+from cabria.models.cabria_model import CABRIAStage1Model
+from cabria.utils.checkpoint import save_checkpoint
+from cabria.utils.common import ensure_dir
+from cabria.utils.factory import build_model_config
+from cabria.utils.optimization import EarlyStopping, EpochLRScheduler
+from cabria.utils.tracking import Tracker
 
 
 def _distributed_state() -> tuple[bool, int, int, int]:
@@ -154,7 +154,7 @@ def train_stage1(config: dict, data_config: dict, device: torch.device, tracker:
     distributed, rank, world_size, local_rank = _distributed_state()
     is_main = rank == 0
 
-    model = COBRAStage1Model(build_model_config(config)).to(device)
+    model = CABRIAStage1Model(build_model_config(config)).to(device)
     model_core = model
     dataset_cfg = data_config.get("general_dataset", {})
     backbone_cfg = config["backbone"]
@@ -183,7 +183,7 @@ def train_stage1(config: dict, data_config: dict, device: torch.device, tracker:
     )
     source_names = [str(cfg.get("name", "flickr_aes")) for cfg in data_config.get("general_datasets", [dataset_cfg])]
     print(
-        "[COBRA] Stage1 GIAA data: "
+        "[CABRIA] Stage1 GIAA data: "
         f"sources={source_names}, "
         f"aux_val_target={aux_val_mode or 'none'}, "
         f"train_samples={len(train_dataset)}, val_samples={len(val_dataset)}, "
@@ -269,7 +269,7 @@ def train_stage1(config: dict, data_config: dict, device: torch.device, tracker:
         )
         if is_main:
             find_unused = bool(config.get("distributed", {}).get("find_unused_parameters", False))
-            print(f"[COBRA] Stage1 DDP enabled: world_size={world_size}, find_unused_parameters={find_unused}")
+            print(f"[CABRIA] Stage1 DDP enabled: world_size={world_size}, find_unused_parameters={find_unused}")
 
     output_dir = ensure_dir(config["experiment"]["output_dir"])
     best_metric = float("-inf")
@@ -387,7 +387,7 @@ def train_stage1(config: dict, data_config: dict, device: torch.device, tracker:
                 checkpoint_metric,
             )
             tqdm.write(
-                f"[COBRA] Stage1 Epoch {epoch}: "
+                f"[CABRIA] Stage1 Epoch {epoch}: "
                 f"train_bad_images_skipped={train_bad_images_epoch} "
                 f"(total={train_bad_images_after}), "
                 f"val_bad_images_skipped={val_bad_images_epoch} "
@@ -444,7 +444,7 @@ def train_stage1(config: dict, data_config: dict, device: torch.device, tracker:
             stop_now = bool(early_stopping.should_stop)
             if stop_now:
                 tqdm.write(
-                    f"[COBRA] Stage1 early stopping triggered at epoch {epoch} "
+                    f"[CABRIA] Stage1 early stopping triggered at epoch {epoch} "
                     f"(patience={early_stopping.patience}, best_srcc={early_stopping.best_metric:.4f})."
                 )
                 if tracker is not None:

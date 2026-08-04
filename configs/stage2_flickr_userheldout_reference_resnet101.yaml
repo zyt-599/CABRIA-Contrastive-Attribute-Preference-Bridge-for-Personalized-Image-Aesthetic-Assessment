@@ -1,8 +1,8 @@
-﻿# Final CABRIA pipeline config. Historical experiment suffixes were removed from active paths.
+# Final CABRIA pipeline config. Historical experiment suffixes were removed from active paths.
 experiment:
-  name: cobra_stage2_flickr_userheldout_reference_resnet101_singlegpu
+  name: cabria_stage2_flickr_userheldout_reference_resnet101_singlegpu
   seed: 42
-  output_dir: /path/to/outputs/cobra_stage2_flickr_userheldout_reference_resnet101_singlegpu
+  output_dir: /path/to/outputs/cabria_stage2_flickr_userheldout_reference_resnet101_singlegpu
   stage1_checkpoint: /path/to/checkpoints/best_stage1.pt
   contrast_checkpoint: /path/to/checkpoints/best_stage1_contrast.pt
   checkpoint_label: multishot

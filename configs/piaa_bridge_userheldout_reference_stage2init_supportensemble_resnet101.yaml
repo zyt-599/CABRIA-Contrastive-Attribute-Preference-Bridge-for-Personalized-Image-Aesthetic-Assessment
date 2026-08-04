@@ -1,7 +1,7 @@
-﻿experiment:
-  name: cobra_piaa_bridge_flickr_userheldout_reference_stage2init_supportensemble_resnet101
+experiment:
+  name: cabria_piaa_bridge_flickr_userheldout_reference_stage2init_supportensemble_resnet101
   seed: 42
-  output_dir: /path/to/outputs/cobra_piaa_bridge_flickr_userheldout_reference_stage2init_supportensemble_resnet101
+  output_dir: /path/to/outputs/cabria_piaa_bridge_flickr_userheldout_reference_stage2init_supportensemble_resnet101
   stage1_checkpoint: /path/to/checkpoints/best_stage1.pt
   contrast_checkpoint: /path/to/checkpoints/best_stage1_contrast.pt
   stage2_init_checkpoint: /path/to/checkpoints/best_stage2_multishot.pt

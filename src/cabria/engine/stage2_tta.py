@@ -4,10 +4,10 @@ from typing import Any, Callable
 
 import torch
 
-from cobra.losses.general_regression import GeneralRegressionLoss
-from cobra.losses.query_ranking import pairwise_ranking_loss
-from cobra.models.cobra_model import COBRAStage2Model
-from cobra.utils.metrics import srcc
+from cabria.losses.general_regression import GeneralRegressionLoss
+from cabria.losses.query_ranking import pairwise_ranking_loss
+from cabria.models.cabria_model import CABRIAStage2Model
+from cabria.utils.metrics import srcc
 
 
 def _move_image_batch(batch: dict[str, torch.Tensor], device: torch.device) -> dict[str, torch.Tensor]:
@@ -55,7 +55,7 @@ def _support_without_chunk(
 
 
 def _apply_support_srcc_tta_init(
-    model: COBRAStage2Model,
+    model: CABRIAStage2Model,
     user_state: dict[str, torch.Tensor],
     support_images: dict[str, torch.Tensor] | torch.Tensor,
     support_scores: torch.Tensor,
@@ -148,7 +148,7 @@ def _select_named_parameters(
 
 
 def adapt_model_parameters_on_support(
-    model: COBRAStage2Model,
+    model: CABRIAStage2Model,
     episode: dict[str, Any],
     config: dict[str, Any],
     device: torch.device,
@@ -401,7 +401,7 @@ def adapt_model_parameters_on_support(
 
 
 def adapt_user_on_support(
-    model: COBRAStage2Model,
+    model: CABRIAStage2Model,
     episode: dict[str, Any],
     config: dict[str, Any],
     device: torch.device,

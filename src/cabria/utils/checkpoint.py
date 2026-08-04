@@ -5,7 +5,7 @@ from typing import Any
 
 import torch
 
-from cobra.utils.common import resolve_path
+from cabria.utils.common import resolve_path
 
 
 def save_checkpoint(

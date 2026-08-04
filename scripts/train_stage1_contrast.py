@@ -14,9 +14,9 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from cobra.engine.stage1_contrast_trainer import train_stage1_contrast
-from cobra.utils.common import get_device, load_yaml, set_seed
-from cobra.utils.tracking import init_tracker
+from cabria.engine.stage1_contrast_trainer import train_stage1_contrast
+from cabria.utils.common import get_device, load_yaml, set_seed
+from cabria.utils.tracking import init_tracker
 
 
 def _maybe_relaunch_with_torchrun(num_gpus: int) -> None:
@@ -50,12 +50,12 @@ def _init_device() -> tuple[torch.device, int]:
     local_rank = int(os.environ["LOCAL_RANK"])
     torch.cuda.set_device(local_rank)
     if not dist.is_initialized():
-        dist.init_process_group(backend=os.environ.get("COBRA_DDP_BACKEND", "gloo"), timeout=timedelta(hours=4))
+        dist.init_process_group(backend=os.environ.get("CABRIA_DDP_BACKEND", "gloo"), timeout=timedelta(hours=4))
     return torch.device("cuda", local_rank), dist.get_rank()
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Train COBRA bridge-support contrast representation.")
+    parser = argparse.ArgumentParser(description="Train CABRIA bridge-support contrast representation.")
     parser.add_argument("--config", required=True)
     parser.add_argument("--data-config", required=True)
     parser.add_argument("--num-gpus", type=int, default=1, help="Number of visible GPUs to use for DDP training.")

@@ -19,23 +19,23 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from cobra.data.episode_sampler import build_episode_dataloader
-from cobra.data.personalized_dataset import PersonalizedEpisodeDataset
-from cobra.data.personalized_dataset import build_train_image_prior_lookup, load_personalized_frame
-from cobra.evaluation.episodic import (
+from cabria.data.episode_sampler import build_episode_dataloader
+from cabria.data.personalized_dataset import PersonalizedEpisodeDataset
+from cabria.data.personalized_dataset import build_train_image_prior_lookup, load_personalized_frame
+from cabria.evaluation.episodic import (
     build_episodic_episodes,
     build_episodic_episodes_common_query,
     filter_episodic_eligible_users,
     resolve_episodic_test_users,
 )
-from cobra.losses.general_regression import GeneralRegressionLoss
-from cobra.losses.query_ranking import pairwise_ranking_loss
-from cobra.models.cobra_model import COBRAStage2Model
-from cobra.utils.common import load_json, load_yaml, resolve_path, set_seed
-from cobra.utils.factory import build_model_config
-from cobra.utils.metrics import plcc, srcc
-from cobra.utils.support_size_overrides import apply_support_size_overrides
-from cobra.utils.tracking import init_tracker
+from cabria.losses.general_regression import GeneralRegressionLoss
+from cabria.losses.query_ranking import pairwise_ranking_loss
+from cabria.models.cabria_model import CABRIAStage2Model
+from cabria.utils.common import load_json, load_yaml, resolve_path, set_seed
+from cabria.utils.factory import build_model_config
+from cabria.utils.metrics import plcc, srcc
+from cabria.utils.support_size_overrides import apply_support_size_overrides
+from cabria.utils.tracking import init_tracker
 
 
 def _release_cuda_cache(device: torch.device) -> None:
@@ -163,7 +163,7 @@ def _select_trainable_parameters(
 
 
 def _set_adaptation_trainable(
-    model: COBRAStage2Model,
+    model: CABRIAStage2Model,
     patterns: list[str],
 ) -> tuple[list[tuple[str, torch.nn.Parameter]], dict[str, torch.Tensor]]:
     for parameter in model.parameters():
@@ -213,7 +213,7 @@ def _restore_adaptation_state(
             value.copy_(user_state[name])
 
 
-def _stage1_eval(model: COBRAStage2Model) -> None:
+def _stage1_eval(model: CABRIAStage2Model) -> None:
     model.stage1.eval()
     if model.contrast_stage1 is not None:
         model.contrast_stage1.eval()
@@ -237,7 +237,7 @@ def _filter_checkpoint_state(
 
 
 def _load_stage2_init(
-    model: COBRAStage2Model,
+    model: CABRIAStage2Model,
     checkpoint: str | None,
     device: torch.device,
     skip_prefixes: tuple[str, ...] = (),
@@ -254,13 +254,13 @@ def _load_stage2_init(
         incompatible = model.load_state_dict(stripped, strict=False)
     if skipped:
         print(
-            "[COBRA-PIAA] stage2 init skipped checkpoint keys: "
+            "[CABRIA-PIAA] stage2 init skipped checkpoint keys: "
             f"prefixes={list(skip_prefixes)} skipped={skipped}",
             flush=True,
         )
     if incompatible.missing_keys or incompatible.unexpected_keys:
         print(
-            "[COBRA-PIAA] stage2 init loaded with non-strict keys: "
+            "[CABRIA-PIAA] stage2 init loaded with non-strict keys: "
             f"missing={len(incompatible.missing_keys)} unexpected={len(incompatible.unexpected_keys)}"
         )
 
@@ -309,12 +309,12 @@ def _load_personalized_frame_cached(
     cache_dir = PROJECT_ROOT / "outputs" / "cache" / "piaa_frames"
     cache_path = cache_dir / f"{dataset_name.lower()}_{key}.pkl"
     if cache_path.exists():
-        print(f"[COBRA-PIAA] loading personalized frame cache={cache_path.as_posix()}", flush=True)
+        print(f"[CABRIA-PIAA] loading personalized frame cache={cache_path.as_posix()}", flush=True)
         return pd.read_pickle(cache_path)
     frame = load_personalized_frame(dataset_name, dataset_root)
     cache_dir.mkdir(parents=True, exist_ok=True)
     frame.to_pickle(cache_path)
-    print(f"[COBRA-PIAA] wrote personalized frame cache={cache_path.as_posix()}", flush=True)
+    print(f"[CABRIA-PIAA] wrote personalized frame cache={cache_path.as_posix()}", flush=True)
     return frame
 
 
@@ -444,7 +444,7 @@ def _episode_to_device(episode: dict[str, Any], device: torch.device) -> dict[st
 
 
 def _evaluate_query(
-    model: COBRAStage2Model,
+    model: CABRIAStage2Model,
     episode: dict[str, Any],
     *,
     device: torch.device,
@@ -496,7 +496,7 @@ def _evaluate_query(
 
 
 def _evaluate_support_loo(
-    model: COBRAStage2Model,
+    model: CABRIAStage2Model,
     support_images: dict[str, torch.Tensor],
     support_scores: torch.Tensor,
     support_prior: torch.Tensor | None,
@@ -543,7 +543,7 @@ def _evaluate_support_loo(
 
 
 def _evaluate_support_holdout(
-    model: COBRAStage2Model,
+    model: CABRIAStage2Model,
     train_images: dict[str, torch.Tensor],
     train_scores: torch.Tensor,
     train_prior_scores: torch.Tensor | None,
@@ -576,7 +576,7 @@ def _evaluate_support_holdout(
 
 
 def _adapt_one_episode(
-    model: COBRAStage2Model,
+    model: CABRIAStage2Model,
     episode: dict[str, Any],
     selected: list[tuple[str, torch.nn.Parameter]],
     initial: dict[str, torch.Tensor],
@@ -1019,7 +1019,7 @@ def _aggregate_support_ensemble_rows(member_rows: list[list[dict[str, Any]]]) ->
 
 
 def _adapt_one_episode_with_support_ensemble(
-    model: COBRAStage2Model,
+    model: CABRIAStage2Model,
     episode: dict[str, Any],
     selected: list[tuple[str, torch.nn.Parameter]],
     initial: dict[str, torch.Tensor],
@@ -1110,7 +1110,7 @@ def _run_support_size(
     with (output_dir / "config_used.json").open("w", encoding="utf-8") as handle:
         json.dump(config, handle, indent=2, ensure_ascii=False)
     print(
-        f"[COBRA-PIAA] support={support_size} init "
+        f"[CABRIA-PIAA] support={support_size} init "
         f"seed={support_seed} "
         f"user_split={config.get('evaluation', {}).get('episodic_user_split', 'test')} "
         f"num_workers={config.get('data', {}).get('num_workers', 0)} "
@@ -1120,21 +1120,21 @@ def _run_support_size(
     )
 
     personalized_cfg = data_config["personalized_dataset"]
-    print(f"[COBRA-PIAA] support={support_size} loading split", flush=True)
+    print(f"[CABRIA-PIAA] support={support_size} loading split", flush=True)
     split_payload = load_json(data_config["user_split"]["split_file"])
-    print(f"[COBRA-PIAA] support={support_size} loading personalized frame", flush=True)
+    print(f"[CABRIA-PIAA] support={support_size} loading personalized frame", flush=True)
     frame = _load_personalized_frame_cached(
         personalized_cfg["name"],
         personalized_cfg["root"],
         enabled=bool(config.get("data", {}).get("use_frame_cache", True)),
     )
-    print(f"[COBRA-PIAA] support={support_size} frame rows={len(frame)}", flush=True)
+    print(f"[CABRIA-PIAA] support={support_size} frame rows={len(frame)}", flush=True)
     image_prior_lookup = None
     if bool(config.get("data", {}).get("use_image_prior", False)):
         prior_split = str(config.get("data", {}).get("image_prior_split", "train_fit"))
-        print(f"[COBRA-PIAA] support={support_size} building image prior lookup split={prior_split}", flush=True)
+        print(f"[CABRIA-PIAA] support={support_size} building image prior lookup split={prior_split}", flush=True)
         image_prior_lookup = build_train_image_prior_lookup(frame, split_payload["splits"][prior_split])
-        print(f"[COBRA-PIAA] support={support_size} image prior entries={len(image_prior_lookup)}", flush=True)
+        print(f"[CABRIA-PIAA] support={support_size} image prior entries={len(image_prior_lookup)}", flush=True)
 
     eval_cfg = config.get("evaluation", {})
     split_users = [str(user_id) for user_id in split_payload["splits"][str(eval_cfg.get("episodic_user_split", "test"))]]
@@ -1149,13 +1149,13 @@ def _run_support_size(
     if args.max_users:
         users = users[: int(args.max_users)]
 
-    print(f"[COBRA-PIAA] support={support_size} building model", flush=True)
-    model = COBRAStage2Model(
+    print(f"[CABRIA-PIAA] support={support_size} building model", flush=True)
+    model = CABRIAStage2Model(
         build_model_config(config),
         stage1_checkpoint=config["experiment"]["stage1_checkpoint"],
         contrast_checkpoint=config["experiment"].get("contrast_checkpoint"),
     ).to(device)
-    print(f"[COBRA-PIAA] support={support_size} loading stage2 init", flush=True)
+    print(f"[CABRIA-PIAA] support={support_size} loading stage2 init", flush=True)
     skip_prefixes = tuple(str(prefix) for prefix in config["experiment"].get("stage2_init_skip_prefixes", ()))
     _load_stage2_init(model, config["experiment"].get("stage2_init_checkpoint"), device, skip_prefixes=skip_prefixes)
     freeze_cfg = config.get("stage2_freeze", {})
@@ -1169,7 +1169,7 @@ def _run_support_size(
     patterns = list(config.get("piaa_adaptation", {}).get("trainable_patterns", ["bridge.", "residual_head."]))
     selected, initial = _set_adaptation_trainable(model, patterns)
     print(
-        f"[COBRA-PIAA] support={support_size} users={len(users)} repeats={args.repeats} "
+        f"[CABRIA-PIAA] support={support_size} users={len(users)} repeats={args.repeats} "
         f"trainable_tensors={len(selected)} trainable_params={sum(p.numel() for _, p in selected)}"
     )
 
@@ -1208,7 +1208,7 @@ def _run_support_size(
         progress = tqdm(
             enumerate(loader, start=1),
             total=len(dataset),
-            desc=f"[COBRA-PIAA] s{support_size} repeat {repeat + 1}/{args.repeats}",
+            desc=f"[CABRIA-PIAA] s{support_size} repeat {repeat + 1}/{args.repeats}",
             dynamic_ncols=True,
             leave=True,
         )
@@ -1240,7 +1240,7 @@ def _run_support_size(
             del episode, episode_epoch_rows, episode_best_rows
             _release_cuda_cache(device)
         print(
-            f"[COBRA-PIAA] s{support_size} repeat={repeat + 1}/{args.repeats} completed "
+            f"[CABRIA-PIAA] s{support_size} repeat={repeat + 1}/{args.repeats} completed "
             f"users={len(dataset)}",
             flush=True,
         )
@@ -1258,7 +1258,7 @@ def _run_support_size(
         support_ensemble_count=support_ensemble_count,
         partial=False,
     )
-    print(f"[COBRA-PIAA] s{support_size} summary: {metrics}", flush=True)
+    print(f"[CABRIA-PIAA] s{support_size} summary: {metrics}", flush=True)
     return metrics
 
 
@@ -1292,7 +1292,7 @@ def _log_piaa_summary(tracker, metrics: dict[str, Any]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="user-heldout per-user bridge adaptation for COBRA PIAA.")
+    parser = argparse.ArgumentParser(description="user-heldout per-user bridge adaptation for CABRIA PIAA.")
     parser.add_argument("--config", required=True)
     parser.add_argument("--data-config", required=True)
     parser.add_argument("--support-sizes", nargs="+", type=int, default=[10, 100])
@@ -1336,8 +1336,8 @@ def main() -> None:
     )
     tracking_cfg = base_config.setdefault("tracking", {})
     tracking_cfg.setdefault("enabled", True)
-    tracking_cfg.setdefault("run_name", f"{base_config.get('experiment', {}).get('name', 'cobra_piaa_bridge')}_piaa")
-    tracking_cfg.setdefault("tags", ["cobra", "piaa", "bridge", "user-heldout"])
+    tracking_cfg.setdefault("run_name", f"{base_config.get('experiment', {}).get('name', 'cabria_piaa_bridge')}_piaa")
+    tracking_cfg.setdefault("tags", ["cabria", "piaa", "bridge", "user-heldout"])
     set_seed(int(base_config.get("experiment", {}).get("seed", 42)))
     device = torch.device(args.device if torch.cuda.is_available() and args.device.startswith("cuda") else "cpu")
     tracker = init_tracker(base_config, job_type="train_piaa_bridge")
@@ -1352,7 +1352,7 @@ def main() -> None:
         with output_root.open("w", encoding="utf-8") as handle:
             json.dump(summaries, handle, indent=2)
         tracker.log_summary({"artifacts/piaa_bridge_summary": output_root.as_posix()})
-        print(f"[COBRA-PIAA] wrote {output_root.as_posix()}")
+        print(f"[CABRIA-PIAA] wrote {output_root.as_posix()}")
     finally:
         tracker.finish()
 

@@ -6,16 +6,16 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from cobra.models.attribute_token_extractor import AttributeTokenExtractor
-from cobra.models.cross_attention_bridge import CrossAttentionBridge
-from cobra.models.preference_encoder import PreferenceEncoder
-from cobra.models.score_heads import ProjectionHead, ScoreHead, TokenResidualHead, TokenScoreHead
-from cobra.models.siglip_adapter import BackboneConfig, Siglip2AdapterBackbone
-from cobra.utils.common import resolve_path
+from cabria.models.attribute_token_extractor import AttributeTokenExtractor
+from cabria.models.cross_attention_bridge import CrossAttentionBridge
+from cabria.models.preference_encoder import PreferenceEncoder
+from cabria.models.score_heads import ProjectionHead, ScoreHead, TokenResidualHead, TokenScoreHead
+from cabria.models.siglip_adapter import BackboneConfig, Siglip2AdapterBackbone
+from cabria.utils.common import resolve_path
 
 
 @dataclass
-class COBRAModelConfig:
+class CABRIAModelConfig:
     backbone: BackboneConfig
     num_attribute_tokens: int
     num_preference_tokens: int
@@ -176,8 +176,8 @@ class SupportCalibrationHead(nn.Module):
         }
 
 
-class COBRAStage1Model(nn.Module):
-    def __init__(self, config: COBRAModelConfig) -> None:
+class CABRIAStage1Model(nn.Module):
+    def __init__(self, config: CABRIAModelConfig) -> None:
         super().__init__()
         self.backbone = Siglip2AdapterBackbone(config.backbone)
         self.attribute_extractor = AttributeTokenExtractor(
@@ -217,21 +217,21 @@ class COBRAStage1Model(nn.Module):
         return self.backbone(pixel_values=images)
 
 
-class COBRAStage2Model(nn.Module):
+class CABRIAStage2Model(nn.Module):
     def __init__(
         self,
-        config: COBRAModelConfig,
+        config: CABRIAModelConfig,
         stage1_checkpoint: str | None = None,
         contrast_checkpoint: str | None = None,
     ) -> None:
         super().__init__()
-        self.stage1 = COBRAStage1Model(config)
+        self.stage1 = CABRIAStage1Model(config)
         if stage1_checkpoint:
             checkpoint = torch.load(resolve_path(stage1_checkpoint), map_location="cpu")
             self.stage1.load_state_dict(checkpoint["model"], strict=True)
         self.contrast_stage1 = None
         if contrast_checkpoint:
-            self.contrast_stage1 = COBRAStage1Model(config)
+            self.contrast_stage1 = CABRIAStage1Model(config)
             checkpoint = torch.load(resolve_path(contrast_checkpoint), map_location="cpu")
             self.contrast_stage1.load_state_dict(checkpoint["model"], strict=True)
         self.residual_scale = config.residual_scale
@@ -446,7 +446,7 @@ class COBRAStage2Model(nn.Module):
             else None
         )
 
-    def _build_stage2_token_adapter(self, config: COBRAModelConfig) -> nn.Module | None:
+    def _build_stage2_token_adapter(self, config: CABRIAModelConfig) -> nn.Module | None:
         if not bool(config.stage2_token_adapter):
             return None
         embed_dim = int(config.backbone.embed_dim)
@@ -501,7 +501,7 @@ class COBRAStage2Model(nn.Module):
 
     def _encode_stage1_chunked(
         self,
-        stage1_model: COBRAStage1Model,
+        stage1_model: CABRIAStage1Model,
         images: torch.Tensor | dict[str, torch.Tensor],
     ) -> dict[str, torch.Tensor]:
         batch_size = self._image_batch_size(images)
@@ -518,7 +518,7 @@ class COBRAStage2Model(nn.Module):
 
     def _forward_stage1_chunked(
         self,
-        stage1_model: COBRAStage1Model,
+        stage1_model: CABRIAStage1Model,
         images: torch.Tensor | dict[str, torch.Tensor],
     ) -> dict[str, torch.Tensor]:
         batch_size = self._image_batch_size(images)
@@ -539,7 +539,7 @@ class COBRAStage2Model(nn.Module):
             residual = torch.tanh(residual) * float(self.residual_max)
         return residual * float(self.residual_scale)
 
-    def _load_semantic_text_features(self, config: COBRAModelConfig) -> torch.Tensor:
+    def _load_semantic_text_features(self, config: CABRIAModelConfig) -> torch.Tensor:
         try:
             from transformers import AutoTokenizer, Siglip2Model
         except ImportError as exc:

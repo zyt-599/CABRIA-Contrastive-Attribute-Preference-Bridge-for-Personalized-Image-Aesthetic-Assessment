@@ -6,7 +6,7 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from cobra.utils.common import ensure_dir, resolve_path
+from cabria.utils.common import ensure_dir, resolve_path
 
 
 class ResidualAdapter(nn.Module):
@@ -119,7 +119,7 @@ class Siglip2AdapterBackbone(nn.Module):
             from transformers import Siglip2VisionModel
         except ImportError as exc:
             raise ImportError(
-                "transformers is required for SigLIP-2. Install COBRA requirements or set model_name=mock."
+                "transformers is required for SigLIP-2. Install CABRIA requirements or set model_name=mock."
             ) from exc
         if not config.pretrained:
             raise ValueError("SigLIP-2 backbone currently expects pretrained weights from Hugging Face.")
@@ -130,11 +130,11 @@ class Siglip2AdapterBackbone(nn.Module):
         if config.model_dir:
             target_dir = resolve_path(config.model_dir)
             if self._has_model_files(target_dir):
-                print(f"[COBRA] Loading SigLIP-2 from local backbone directory: {target_dir.as_posix()}")
+                print(f"[CABRIA] Loading SigLIP-2 from local backbone directory: {target_dir.as_posix()}")
                 return str(target_dir)
             target_dir = ensure_dir(target_dir)
-            print(f"[COBRA] SigLIP-2 not found locally. Downloading into: {target_dir.as_posix()}")
-            print("[COBRA] First download may take a while. Hugging Face will display file progress.")
+            print(f"[CABRIA] SigLIP-2 not found locally. Downloading into: {target_dir.as_posix()}")
+            print("[CABRIA] First download may take a while. Hugging Face will display file progress.")
             try:
                 from huggingface_hub import snapshot_download
                 from huggingface_hub.utils import disable_progress_bars, enable_progress_bars

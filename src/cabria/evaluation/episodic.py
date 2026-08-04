@@ -12,7 +12,7 @@ from typing import Any, Mapping
 
 import numpy as np
 
-from cobra.data.personalized_dataset import EpisodeSpec
+from cabria.data.personalized_dataset import EpisodeSpec
 
 DEFAULT_EPISODIC_SEED = 42
 DEFAULT_EPISODIC_REPEATS = 10

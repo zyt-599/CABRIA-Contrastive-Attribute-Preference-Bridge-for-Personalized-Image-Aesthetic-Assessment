@@ -9,13 +9,13 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from cobra.data.personalized_dataset import load_personalized_frame
-from cobra.data.user_split import UserSplitConfig, build_episode_specs, serialize_episode_specs, split_users
-from cobra.utils.common import dump_json, load_yaml, resolve_path, set_seed
+from cabria.data.personalized_dataset import load_personalized_frame
+from cabria.data.user_split import UserSplitConfig, build_episode_specs, serialize_episode_specs, split_users
+from cabria.utils.common import dump_json, load_yaml, resolve_path, set_seed
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Prepare COBRA user splits and support/query episodes.")
+    parser = argparse.ArgumentParser(description="Prepare CABRIA user splits and support/query episodes.")
     parser.add_argument("--data-config", default=str(PROJECT_ROOT / "configs" / "data_flickr_aes_prior_remote.yaml"))
     args = parser.parse_args()
 
@@ -25,12 +25,12 @@ def main() -> None:
     personalized_cfg = data_config["personalized_dataset"]
     dataset_name = personalized_cfg["name"]
     dataset_root = personalized_cfg["root"]
-    print(f"[COBRA] Preparing user splits for dataset: {dataset_name}", flush=True)
-    print(f"[COBRA] Dataset root: {dataset_root}", flush=True)
+    print(f"[CABRIA] Preparing user splits for dataset: {dataset_name}", flush=True)
+    print(f"[CABRIA] Dataset root: {dataset_root}", flush=True)
 
     frame = load_personalized_frame(personalized_cfg["name"], personalized_cfg["root"])
-    print(f"[COBRA] Usable personalized samples: {len(frame)}", flush=True)
-    print(f"[COBRA] Unique users after filtering: {frame['user_id'].nunique()}", flush=True)
+    print(f"[CABRIA] Usable personalized samples: {len(frame)}", flush=True)
+    print(f"[CABRIA] Unique users after filtering: {frame['user_id'].nunique()}", flush=True)
 
     user_split_cfg = data_config["user_split"]
     split_config = UserSplitConfig(
@@ -46,20 +46,20 @@ def main() -> None:
         min_test_user_rows=user_split_cfg.get("min_test_user_rows"),
     )
     print(
-        "[COBRA] Split protocol: "
+        "[CABRIA] Split protocol: "
         f"{split_config.protocol}; "
         f"counts train={split_config.train_user_count}, val={split_config.val_user_count}, "
         f"test={split_config.test_user_count}, val_from_train={split_config.val_from_train_users}",
         flush=True,
     )
-    print(f"[COBRA] Support sizes: {split_config.support_sizes}", flush=True)
+    print(f"[CABRIA] Support sizes: {split_config.support_sizes}", flush=True)
     splits = split_users(frame, split_config)
     payload = {"splits": splits, "episodes": {}}
     for split_name, users in splits.items():
         default_episodes = data_config["user_split"].get("train_episodes_per_user", 1) if split_name == "train_fit" else 1
         episodes_per_user = int(data_config["user_split"].get(f"{split_name}_episodes_per_user", default_episodes))
-        print(f"[COBRA] Building episodes for split={split_name}, users={len(users)}", flush=True)
-        print(f"[COBRA] Episodes per user for {split_name}: {episodes_per_user}", flush=True)
+        print(f"[CABRIA] Building episodes for split={split_name}, users={len(users)}", flush=True)
+        print(f"[CABRIA] Episodes per user for {split_name}: {episodes_per_user}", flush=True)
         split_episodes = build_episode_specs(
             frame,
             users,
@@ -72,11 +72,11 @@ def main() -> None:
             f"{support_size}-shot={len(specs)}"
             for support_size, specs in split_episodes.items()
         )
-        print(f"[COBRA] Episode summary for {split_name}: {summary}", flush=True)
+        print(f"[CABRIA] Episode summary for {split_name}: {summary}", flush=True)
 
     output_path = data_config["user_split"]["split_file"]
     dump_json(payload, output_path)
-    print(f"[COBRA] Saved split manifest to: {output_path}", flush=True)
+    print(f"[CABRIA] Saved split manifest to: {output_path}", flush=True)
 
 
 if __name__ == "__main__":

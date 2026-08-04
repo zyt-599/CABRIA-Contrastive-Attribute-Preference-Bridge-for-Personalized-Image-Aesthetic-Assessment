@@ -13,34 +13,34 @@ from torch.utils.data import Subset
 from torch.utils.data.distributed import DistributedSampler
 from tqdm.auto import tqdm
 
-from cobra.data.episode_sampler import build_episode_dataloader
-from cobra.data.personalized_dataset import (
+from cabria.data.episode_sampler import build_episode_dataloader
+from cabria.data.personalized_dataset import (
     PersonalizedEpisodeDataset,
     build_train_image_prior_lookup,
     load_personalized_frame,
 )
-from cobra.data.user_split import build_episode_specs, build_fixed_query_episodes, deserialize_episode_specs, filter_users_by_min_row_count
-from cobra.evaluation.fixed_query import build_fixed_query_val_episodes, resolve_fixed_query_settings
-from cobra.evaluation.episodic import (
+from cabria.data.user_split import build_episode_specs, build_fixed_query_episodes, deserialize_episode_specs, filter_users_by_min_row_count
+from cabria.evaluation.fixed_query import build_fixed_query_val_episodes, resolve_fixed_query_settings
+from cabria.evaluation.episodic import (
     build_episodic_episodes,
     build_episodic_episodes_common_query,
     filter_episodic_eligible_users,
     resolve_episodic_test_users,
     resolve_episodic_val_settings,
 )
-from cobra.engine.evaluator import evaluate_stage2_decomposed
-from cobra.engine.stage2_tta import adapt_user_on_support, tta_enabled
-from cobra.losses.distribution_alignment import DistributionAlignmentLoss
-from cobra.losses.general_regression import GeneralRegressionLoss
-from cobra.losses.query_ranking import pairwise_ranking_loss
-from cobra.losses.same_image_order import same_image_user_order_loss
-from cobra.models.cobra_model import COBRAStage2Model
-from cobra.utils.checkpoint import save_checkpoint
-from cobra.utils.common import ensure_dir, load_json, resolve_path
-from cobra.utils.factory import build_model_config
-from cobra.utils.metrics import macro_user_correlations, same_image_rank_correlation, threshold_accuracy
-from cobra.utils.optimization import EarlyStopping, EpochLRScheduler
-from cobra.utils.tracking import Tracker
+from cabria.engine.evaluator import evaluate_stage2_decomposed
+from cabria.engine.stage2_tta import adapt_user_on_support, tta_enabled
+from cabria.losses.distribution_alignment import DistributionAlignmentLoss
+from cabria.losses.general_regression import GeneralRegressionLoss
+from cabria.losses.query_ranking import pairwise_ranking_loss
+from cabria.losses.same_image_order import same_image_user_order_loss
+from cabria.models.cabria_model import CABRIAStage2Model
+from cabria.utils.checkpoint import save_checkpoint
+from cabria.utils.common import ensure_dir, load_json, resolve_path
+from cabria.utils.factory import build_model_config
+from cabria.utils.metrics import macro_user_correlations, same_image_rank_correlation, threshold_accuracy
+from cabria.utils.optimization import EarlyStopping, EpochLRScheduler
+from cabria.utils.tracking import Tracker
 
 
 def _stage2_checkpoint_label(config: dict, support_size: str) -> str:
@@ -224,10 +224,10 @@ def _metrics_from_predictions(
 
 def train_stage2(config: dict, data_config: dict, device: torch.device, tracker: Tracker | None = None) -> Path:
     personalized_cfg = data_config["personalized_dataset"]
-    print(f"[COBRA] Stage2 device: {device}")
-    print(f"[COBRA] Stage2 personalized dataset: {personalized_cfg['name']}")
-    print(f"[COBRA] Stage2 dataset root: {personalized_cfg['root']}")
-    print(f"[COBRA] Stage2 split manifest: {data_config['user_split']['split_file']}")
+    print(f"[CABRIA] Stage2 device: {device}")
+    print(f"[CABRIA] Stage2 personalized dataset: {personalized_cfg['name']}")
+    print(f"[CABRIA] Stage2 dataset root: {personalized_cfg['root']}")
+    print(f"[CABRIA] Stage2 split manifest: {data_config['user_split']['split_file']}")
     split_payload = load_json(data_config["user_split"]["split_file"])
     frame = load_personalized_frame(personalized_cfg["name"], personalized_cfg["root"])
     episodes = {
@@ -244,28 +244,28 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
     image_prior_lookup = None
     if bool(config["data"].get("use_image_prior", False)):
         image_prior_lookup = build_train_image_prior_lookup(frame, split_payload["splits"][image_prior_split_name])
-        print(f"[COBRA] Stage2 image prior enabled: split={image_prior_split_name}, samples={len(image_prior_lookup)}")
-    print(f"[COBRA] Stage2 support size: {support_size}")
-    print(f"[COBRA] Stage2 train split: {train_split_name}")
+        print(f"[CABRIA] Stage2 image prior enabled: split={image_prior_split_name}, samples={len(image_prior_lookup)}")
+    print(f"[CABRIA] Stage2 support size: {support_size}")
+    print(f"[CABRIA] Stage2 train split: {train_split_name}")
     print(
-        "[COBRA] Stage2 query limits: "
+        "[CABRIA] Stage2 query limits: "
         f"train_query_size={config['data'].get('train_query_size')}, "
         f"eval_query_size={config['data'].get('eval_query_size')}"
     )
     print(
-        "[COBRA] Stage2 episode counts: "
+        "[CABRIA] Stage2 episode counts: "
         f"train={len(episodes[train_split_name][support_size])}, "
         f"val={len(episodes['val'][support_size])}, "
         f"test={len(episodes['test'][support_size])}"
     )
-    print(f"[COBRA] Stage2 normalized samples: {len(frame)}")
+    print(f"[CABRIA] Stage2 normalized samples: {len(frame)}")
 
     backbone_cfg = config["backbone"]
-    print(f"[COBRA] Stage2 loading Stage1 checkpoint: {config['experiment']['stage1_checkpoint']}")
+    print(f"[CABRIA] Stage2 loading Stage1 checkpoint: {config['experiment']['stage1_checkpoint']}")
     contrast_checkpoint = config["experiment"].get("contrast_checkpoint")
     if contrast_checkpoint:
-        print(f"[COBRA] Stage2 loading contrast checkpoint: {contrast_checkpoint}")
-    model = COBRAStage2Model(
+        print(f"[CABRIA] Stage2 loading contrast checkpoint: {contrast_checkpoint}")
+    model = CABRIAStage2Model(
         build_model_config(config),
         stage1_checkpoint=config["experiment"]["stage1_checkpoint"],
         contrast_checkpoint=contrast_checkpoint,
@@ -279,11 +279,11 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
         incompatible = model.load_state_dict(state, strict=init_strict)
         if incompatible.missing_keys or incompatible.unexpected_keys:
             print(
-                "[COBRA] Stage2 warm-start non-strict keys: "
+                "[CABRIA] Stage2 warm-start non-strict keys: "
                 f"missing={len(incompatible.missing_keys)} unexpected={len(incompatible.unexpected_keys)}"
             )
         print(
-            f"[COBRA] Stage2 warm-started from checkpoint: {init_path.as_posix()} "
+            f"[CABRIA] Stage2 warm-started from checkpoint: {init_path.as_posix()} "
             f"strict={init_strict}"
         )
     model.freeze_stage1(
@@ -294,7 +294,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
         freeze_attribute_head=bool(config["stage2_freeze"].get("freeze_attribute_head", True)),
     )
     print(
-        "[COBRA] Stage2 freeze policy: "
+        "[CABRIA] Stage2 freeze policy: "
         f"backbone={config['stage2_freeze']['freeze_backbone']}, "
         f"adapter={config['stage2_freeze'].get('freeze_adapter', config['stage2_freeze']['freeze_backbone'])}, "
         f"attribute_extractor={config['stage2_freeze']['freeze_attribute_extractor']}, "
@@ -319,7 +319,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
         )
         if is_main:
             find_unused = bool(config.get("distributed", {}).get("find_unused_parameters", False))
-            print(f"[COBRA] Stage2 DDP enabled: world_size={world_size}, find_unused_parameters={find_unused}")
+            print(f"[CABRIA] Stage2 DDP enabled: world_size={world_size}, find_unused_parameters={find_unused}")
 
     dynamic_train_episodes = bool(config["data"].get("dynamic_train_episodes", False))
     train_episodes_per_user = int(
@@ -341,13 +341,13 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
         fixed_episode_seed = int(_fixed_seed_raw)
     if fixed_episode_seed is not None and selection_repeats > 1 and is_main:
         print(
-            "[COBRA] Stage2 evaluation: fixed_episode_seed is set; "
+            "[CABRIA] Stage2 evaluation: fixed_episode_seed is set; "
             f"ignoring selection_repeats={selection_repeats} (single deterministic val pass)."
         )
     if fixed_episode_seed is not None and is_main:
         print(
-            f"[COBRA] Stage2 val support seed anchor: fixed_episode_seed={fixed_episode_seed} "
-            "(fixed-query val; same defaults as cobra.evaluation.fixed_query + scripts/evaluate.py)."
+            f"[CABRIA] Stage2 val support seed anchor: fixed_episode_seed={fixed_episode_seed} "
+            "(fixed-query val; same defaults as cabria.evaluation.fixed_query + scripts/evaluate.py)."
         )
     selection_base_penalty = float(eval_cfg.get("selection_base_penalty", 0.0))
     selection_gain_weight = float(eval_cfg.get("selection_gain_weight", 1.0))
@@ -425,7 +425,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
     val_user_ids = [str(user_id) for user_id in split_payload["splits"][val_user_split_name]]
     if is_main and val_user_split_name != "val":
         print(
-            f"[COBRA] Stage2 validation user split override: "
+            f"[CABRIA] Stage2 validation user split override: "
             f"val_user_split={val_user_split_name}, users={len(val_user_ids)}"
         )
     val_episodes_are_episodic = val_protocol == "episodic"
@@ -467,7 +467,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
         val_specs_source = "episodic"
         if is_main:
             print(
-                f"[COBRA] val_protocol=episodic: user_source={episodic_val_cfg['user_source']}, "
+                f"[CABRIA] val_protocol=episodic: user_source={episodic_val_cfg['user_source']}, "
                 f"eligible={len(val_episodic_eligible)}/{len(val_episodic_users)}, "
                 f"episodes={len(val_episode_specs)}, val_repeats={episodic_val_cfg['repeats']}, "
                 f"seed={episodic_val_cfg['seed']}, common_query={episodic_val_common_query}, "
@@ -485,7 +485,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
         if built is None:
             if is_main:
                 print(
-                    "[COBRA] val_protocol=fixed_query produced zero val episodes "
+                    "[CABRIA] val_protocol=fixed_query produced zero val episodes "
                     "(try lowering evaluation.fixed_query_min_images or val_protocol: manifest); "
                     "falling back to manifest val."
                 )
@@ -496,7 +496,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
             val_specs_source = "fixed_query"
     val_episodes_are_fixed_query = val_specs_source == "fixed_query"
     if is_main:
-        print(f"[COBRA] Stage2 val episode source={val_specs_source}, count={len(val_episode_specs)}")
+        print(f"[CABRIA] Stage2 val episode source={val_specs_source}, count={len(val_episode_specs)}")
     val_dataset_full = make_dataset(
         val_episode_specs,
         train=False,
@@ -511,7 +511,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
         prefetch_factor=dataloader_prefetch_factor,
     )
     print(
-        "[COBRA] Stage2 dataloaders ready: "
+        "[CABRIA] Stage2 dataloaders ready: "
         f"train_episodes={len(train_dataset)}, "
         f"val_episodes={len(val_dataset_full)}, "
         f"train_num_workers={config['data']['num_workers']}, "
@@ -553,7 +553,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
         )
         if is_main:
             state = "enabled" if selection_eval_config["test_time_adaptation"]["enabled"] else "disabled"
-            print(f"[COBRA] Stage2 validation checkpoint selection TTA {state}.")
+            print(f"[CABRIA] Stage2 validation checkpoint selection TTA {state}.")
 
     def evaluate_validation(epoch: int) -> tuple[dict[str, float], pd.DataFrame]:
         acc_threshold = eval_cfg.get("acc_threshold")
@@ -761,17 +761,17 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
                 mode="softmax",
                 temperature=float(dist_cfg.get("dist_temperature", 1.0)),
             )
-            print(f"[COBRA] Stage2 distribution mode: softmax")
-            print(f"[COBRA] Stage2 distribution temperature: {dist_loss.temperature}")
+            print(f"[CABRIA] Stage2 distribution mode: softmax")
+            print(f"[CABRIA] Stage2 distribution temperature: {dist_loss.temperature}")
         elif len(score_values) <= max_discrete_bins:
             dist_loss = DistributionAlignmentLoss(
                 mode="histogram",
                 score_values=score_values,
                 sigma=float(dist_cfg.get("dist_bin_sigma", 0.5)),
             )
-            print(f"[COBRA] Stage2 distribution mode: histogram")
-            print(f"[COBRA] Stage2 distribution bins: {dist_loss.describe_bins()}")
-            print(f"[COBRA] Stage2 distribution sigma: {dist_loss.sigma}")
+            print(f"[CABRIA] Stage2 distribution mode: histogram")
+            print(f"[CABRIA] Stage2 distribution bins: {dist_loss.describe_bins()}")
+            print(f"[CABRIA] Stage2 distribution sigma: {dist_loss.sigma}")
         else:
             dist_loss = DistributionAlignmentLoss(
                 mode="histogram",
@@ -780,11 +780,11 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
                 num_bins=int(dist_cfg.get("dist_num_bins", 11)),
                 sigma=float(dist_cfg.get("dist_bin_sigma", 0.5)),
             )
-            print(f"[COBRA] Stage2 distribution mode: histogram")
-            print(f"[COBRA] Stage2 distribution bins: {dist_loss.describe_bins()}")
-            print(f"[COBRA] Stage2 distribution sigma: {dist_loss.sigma}")
+            print(f"[CABRIA] Stage2 distribution mode: histogram")
+            print(f"[CABRIA] Stage2 distribution bins: {dist_loss.describe_bins()}")
+            print(f"[CABRIA] Stage2 distribution sigma: {dist_loss.sigma}")
     else:
-        print("[COBRA] Stage2 distribution loss disabled (lambda_distribution omitted).")
+        print("[CABRIA] Stage2 distribution loss disabled (lambda_distribution omitted).")
     trainable_patterns = list(config["optimization"].get("trainable_patterns", []))
     if trainable_patterns:
         for parameter in model.parameters():
@@ -798,7 +798,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
             raise RuntimeError(f"No Stage2 trainable parameters matched patterns={trainable_patterns!r}.")
         if is_main:
             print(
-                "[COBRA] Stage2 trainable pattern override: "
+                "[CABRIA] Stage2 trainable pattern override: "
                 f"patterns={trainable_patterns}, tensors={len(matched_names)}"
             )
     base_lr = float(config["optimization"]["lr"])
@@ -902,12 +902,12 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
             torch.cuda.empty_cache()
         if is_main:
             print(
-                "[COBRA] Stage2 resumed checkpoint: "
+                "[CABRIA] Stage2 resumed checkpoint: "
                 f"path={resume_checkpoint.as_posix()}, start_epoch={start_epoch}, "
                 f"best_metric={best_metric:.4f}, global_step={global_step}"
             )
     print(
-        "[COBRA] Stage2 optimization: "
+        "[CABRIA] Stage2 optimization: "
         f"epochs={config['optimization']['epochs']}, "
         f"lr={config['optimization']['lr']}, "
         f"use_amp={use_amp}, "
@@ -919,34 +919,34 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
     train_tta_every_n_steps = max(int(tta_cfg.get("train_every_n_steps", 1)), 1)
     train_tta_max_episodes_per_batch = int(tta_cfg.get("train_max_episodes_per_batch", 0))
     if tta_enabled(config):
-        print(f"[COBRA] Stage2 test-time adaptation enabled: {tta_cfg}")
+        print(f"[CABRIA] Stage2 test-time adaptation enabled: {tta_cfg}")
     if use_train_tta:
         episode_limit = train_tta_max_episodes_per_batch if train_tta_max_episodes_per_batch > 0 else "all"
         print(
-            "[COBRA] Stage2 train-time TTA enabled: "
+            "[CABRIA] Stage2 train-time TTA enabled: "
             f"every_n_steps={train_tta_every_n_steps}, "
             f"episodes_per_batch={episode_limit}."
         )
     else:
-        print("[COBRA] Stage2 train-time TTA disabled; TTA is applied only for validation/test.")
+        print("[CABRIA] Stage2 train-time TTA disabled; TTA is applied only for validation/test.")
     backward_per_episode = bool(config.get("data", {}).get("backward_per_episode", False))
     if backward_per_episode and enable_same_image_order:
         print(
-            "[COBRA] Stage2 backward_per_episode disabled: incompatible with "
+            "[CABRIA] Stage2 backward_per_episode disabled: incompatible with "
             "lambda_same_image_user_order (batch-coupled loss)."
         )
         backward_per_episode = False
     if backward_per_episode:
         print(
-            "[COBRA] Stage2 backward_per_episode enabled: sequential backward(loss / batch_size) "
+            "[CABRIA] Stage2 backward_per_episode enabled: sequential backward(loss / batch_size) "
             "per episode to reduce activation VRAM (gradients match joint batch-mean loss)."
         )
     print(
-        "[COBRA] Stage2 ranking: "
+        "[CABRIA] Stage2 ranking: "
         f"query_mode={query_ranking_mode}, support_mode={support_ranking_mode}, "
         f"query_max_pairs={query_ranking_max_pairs}, support_max_pairs={support_ranking_max_pairs}"
     )
-    print("[COBRA] Stage2 entering training loop.")
+    print("[CABRIA] Stage2 entering training loop.")
 
     def _support_estimator_residual(outputs: dict[str, torch.Tensor]) -> torch.Tensor:
         """Return the support-derived residual components as one trainable estimator."""
@@ -1222,7 +1222,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
         if dynamic_train_episodes:
             train_dataset, train_loader, train_sampler = build_train_loader_for_epoch(epoch)
             tqdm.write(
-                f"[COBRA] Stage2 resampled train episodes for epoch {epoch}: "
+                f"[CABRIA] Stage2 resampled train episodes for epoch {epoch}: "
                 f"episodes={len(train_dataset)}, episodes_per_user={train_episodes_per_user}"
             )
         model.train()
@@ -1727,7 +1727,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
             )
             if diagnostics_max_train_batches > 0 and num_batches >= diagnostics_max_train_batches:
                 tqdm.write(
-                    "[COBRA][PROFILE] Stopping training epoch after "
+                    "[CABRIA][PROFILE] Stopping training epoch after "
                     f"{num_batches} diagnostic batch(es)."
                 )
                 break
@@ -1793,7 +1793,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
         if is_main:
             eval_metrics = {f"val/{key}": value for key, value in metrics.items()}
             tqdm.write(
-                f"[COBRA] Stage2 Epoch {epoch}: "
+                f"[CABRIA] Stage2 Epoch {epoch}: "
                 f"train_loss={train_metrics['train/loss']:.4f}, "
                 f"macro_srcc={metrics.get('macro_srcc', float('nan')):.4f}, "
                 f"macro_plcc={metrics.get('macro_plcc', float('nan')):.4f}, "
@@ -1878,7 +1878,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
                     },
                 )
                 predictions.to_csv(output_dir / f"val_predictions_{checkpoint_label}.csv", index=False)
-                tqdm.write(f"[COBRA] Stage2 saved new best checkpoint: {best_checkpoint.as_posix()}")
+                tqdm.write(f"[CABRIA] Stage2 saved new best checkpoint: {best_checkpoint.as_posix()}")
                 if tracker is not None:
                     tracker.log_summary(
                         {
@@ -1901,7 +1901,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
             stop_now = bool(early_stopping.should_stop)
             if stop_now:
                 tqdm.write(
-                    f"[COBRA] Stage2 early stopping triggered at epoch {epoch} "
+                    f"[CABRIA] Stage2 early stopping triggered at epoch {epoch} "
                     f"(patience={early_stopping.patience}, best_selection={early_stopping.best_metric:.4f})."
                 )
                 if tracker is not None:
@@ -1922,7 +1922,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
         fq = resolve_fixed_query_settings(eval_cfg)
         if fixed_episode_seed is not None:
             tqdm.write(
-                "[COBRA] Protocol: deterministic test (fixed-query holdout; match val support seed) via:\n"
+                "[CABRIA] Protocol: deterministic test (fixed-query holdout; match val support seed) via:\n"
                 f"  PYTHONPATH=src python scripts/evaluate_repeated_support.py \\\n"
                 "    --config <stage2_yaml> --data-config <data_yaml> \\\n"
                 f"    --checkpoint {best_checkpoint.as_posix()} \\\n"
@@ -1932,7 +1932,7 @@ def train_stage2(config: dict, data_config: dict, device: torch.device, tracker:
             )
         else:
             tqdm.write(
-                "[COBRA] Protocol: report test macro_srcc mean±std under fixed-query + resampled support via:\n"
+                "[CABRIA] Protocol: report test macro_srcc mean±std under fixed-query + resampled support via:\n"
                 f"  PYTHONPATH=src python scripts/evaluate_repeated_support.py \\\n"
                 "    --config <stage2_yaml> --data-config <data_yaml> \\\n"
                 f"    --checkpoint {best_checkpoint.as_posix()} \\\n"

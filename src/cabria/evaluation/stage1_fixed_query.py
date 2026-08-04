@@ -8,11 +8,11 @@ import pandas as pd
 import torch
 from tqdm.auto import tqdm
 
-from cobra.data.episode_sampler import build_episode_dataloader
-from cobra.data.personalized_dataset import PersonalizedEpisodeDataset, load_personalized_frame
-from cobra.evaluation.fixed_query import build_fixed_query_val_episodes, resolve_fixed_query_settings
-from cobra.utils.common import load_json
-from cobra.utils.metrics import macro_user_correlations, same_image_rank_correlation
+from cabria.data.episode_sampler import build_episode_dataloader
+from cabria.data.personalized_dataset import PersonalizedEpisodeDataset, load_personalized_frame
+from cabria.evaluation.fixed_query import build_fixed_query_val_episodes, resolve_fixed_query_settings
+from cabria.utils.common import load_json
+from cabria.utils.metrics import macro_user_correlations, same_image_rank_correlation
 
 
 @torch.no_grad()

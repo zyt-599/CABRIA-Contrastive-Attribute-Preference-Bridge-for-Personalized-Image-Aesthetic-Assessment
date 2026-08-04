@@ -15,10 +15,10 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from cobra.engine.stage2_trainer import train_stage2
-from cobra.utils.common import get_device, load_yaml, set_seed
-from cobra.utils.support_size_overrides import apply_support_size_overrides
-from cobra.utils.tracking import init_tracker
+from cabria.engine.stage2_trainer import train_stage2
+from cabria.utils.common import get_device, load_yaml, set_seed
+from cabria.utils.support_size_overrides import apply_support_size_overrides
+from cabria.utils.tracking import init_tracker
 
 
 def _stage2_run_label(config: dict, support_size: int) -> str:
@@ -65,29 +65,29 @@ def _init_device() -> tuple[torch.device, int, int]:
     local_rank = int(os.environ["LOCAL_RANK"])
     torch.cuda.set_device(local_rank)
     if not dist.is_initialized():
-        dist.init_process_group(backend=os.environ.get("COBRA_DDP_BACKEND", "gloo"), timeout=timedelta(hours=4))
+        dist.init_process_group(backend=os.environ.get("CABRIA_DDP_BACKEND", "gloo"), timeout=timedelta(hours=4))
     return torch.device("cuda", local_rank), dist.get_rank(), dist.get_world_size()
 
 
 def _configure_cuda_linalg_backend(is_main: bool) -> None:
-    backend = os.environ.get("COBRA_CUDA_LINALG_BACKEND", "").strip().lower()
+    backend = os.environ.get("CABRIA_CUDA_LINALG_BACKEND", "").strip().lower()
     if not backend:
         return
     if backend not in {"default", "cusolver", "magma"}:
         raise ValueError(
-            "COBRA_CUDA_LINALG_BACKEND must be one of: default, cusolver, magma."
+            "CABRIA_CUDA_LINALG_BACKEND must be one of: default, cusolver, magma."
         )
     if not torch.cuda.is_available():
         return
     torch.backends.cuda.preferred_linalg_library(backend)
     if is_main:
         current = torch.backends.cuda.preferred_linalg_library()
-        print(f"[COBRA] CUDA linalg backend: {current}", flush=True)
+        print(f"[CABRIA] CUDA linalg backend: {current}", flush=True)
 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Train COBRA stage 2.")
+    parser = argparse.ArgumentParser(description="Train CABRIA stage 2.")
     parser.add_argument("--config", required=True)
     parser.add_argument("--data-config", required=True)
     parser.add_argument(

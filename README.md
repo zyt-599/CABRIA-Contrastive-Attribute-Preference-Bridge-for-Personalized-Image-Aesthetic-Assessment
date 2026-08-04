@@ -45,7 +45,7 @@ The full pipeline has four stages:
 ```text
 configs/                 Data, Stage 1, Contrast, Stage 2, and PIAA configs
 scripts/                 Training, split preparation, and inference entrypoints
-src/cobra/               Python package
+src/cabria/               Python package
 assets/figures/          README figures and source PDFs
 requirements.txt         Python dependencies
 ```

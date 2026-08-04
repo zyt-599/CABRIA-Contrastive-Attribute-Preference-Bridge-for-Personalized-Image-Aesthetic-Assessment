@@ -1,7 +1,7 @@
-﻿experiment:
-  name: cobra_stage1_contrast_flickr_userheldout_reference_resnet101_singlegpu
+experiment:
+  name: cabria_stage1_contrast_flickr_userheldout_reference_resnet101_singlegpu
   seed: 42
-  output_dir: /path/to/outputs/cobra_stage1_contrast_flickr_userheldout_reference_resnet101_singlegpu
+  output_dir: /path/to/outputs/cabria_stage1_contrast_flickr_userheldout_reference_resnet101_singlegpu
   giaa_checkpoint: /path/to/checkpoints/best_stage1.pt
 distributed:
   find_unused_parameters: true

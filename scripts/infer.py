@@ -13,14 +13,14 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from cobra.data.image_batch import pad_image_list, prepare_image_tensor
-from cobra.models.cobra_model import COBRAStage2Model
-from cobra.utils.common import get_device, load_yaml, resolve_path
-from cobra.utils.factory import build_model_config
+from cabria.data.image_batch import pad_image_list, prepare_image_tensor
+from cabria.models.cabria_model import CABRIAStage2Model
+from cabria.utils.common import get_device, load_yaml, resolve_path
+from cabria.utils.factory import build_model_config
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run single-user COBRA inference.")
+    parser = argparse.ArgumentParser(description="Run single-user CABRIA inference.")
     parser.add_argument("--config", required=True)
     parser.add_argument("--stage2-checkpoint", required=True)
     parser.add_argument("--support-images", nargs="+", required=True)
@@ -33,7 +33,7 @@ def main() -> None:
 
     config = load_yaml(args.config)
     device = get_device()
-    model = COBRAStage2Model(
+    model = CABRIAStage2Model(
         build_model_config(config),
         stage1_checkpoint=config["experiment"]["stage1_checkpoint"],
         contrast_checkpoint=config["experiment"].get("contrast_checkpoint"),
