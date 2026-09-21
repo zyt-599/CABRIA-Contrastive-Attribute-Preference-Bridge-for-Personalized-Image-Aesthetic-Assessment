@@ -1,0 +1,35 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local data and generated artifacts
+Datasets/
+data/
+backbone/
+logs/
+outputs/
+wandb/
+
+# Model, checkpoint, and archive artifacts
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.zip
+
+# Local environments and secrets
+.env
+.venv/
+venv/
+*.pem
+*.key
+credentials.json
+settings.json

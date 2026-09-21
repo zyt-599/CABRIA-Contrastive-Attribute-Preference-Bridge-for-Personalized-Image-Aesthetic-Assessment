@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "CABRIA: Contrastive Attribute Preference Bridge for Personalized Image Aesthetic Assessment"
+type: software
+version: 1.0.0
+date-released: 2026-09-21
+authors:
+  - family-names: Tao
+    given-names: Ziyuan
+  - family-names: Xu
+    given-names: Chao
+  - family-names: Mahmood
+    given-names: Adnan
+repository-code: "https://github.com/zyt-599/CABRIA-Contrastive-Attribute-Preference-Bridge-for-Personalized-Image-Aesthetic-Assessment"
+license: MIT
+keywords:
+  - personalized image aesthetic assessment
+  - few-shot personalization
+  - contrastive learning
+  - residual learning

@@ -166,3 +166,13 @@ python scripts/infer.py \
 - Checkpoints, logs, datasets, local backbone caches, and experiment artifacts are not included.
 - Config files use `/path/to/...` placeholders for machine-specific paths.
 - Experiment tracking integrations are not included in this public release.
+
+## Citation
+
+Citation metadata for this release are provided in [`CITATION.cff`](CITATION.cff).
+The archived release DOI is also available from the repository's GitHub
+**Cite this repository** menu.
+
+## License
+
+CABRIA is released under the [MIT License](LICENSE).
