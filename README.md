@@ -1,5 +1,8 @@
 # CABRIA
 
+> **Manuscript status:** The CABRIA manuscript is currently under review at
+> *Scientific Reports*.
+
 CABRIA is a personalized image aesthetic assessment (PIAA) framework based on
 support-conditioned residual preference memory. The codebase contains the
 training and evaluation pipeline for a shared aesthetic prior, dataset-specific
